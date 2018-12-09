@@ -195,3 +195,123 @@ def orf_length(start_index, stop_index):
 
         return -1
 
+def orf_reading_frame(start_index, stop_index):
+    """
+    Return reading frame of ORF
+
+    Args:
+        start_index (int): location of start_codon
+        stop_index (int): location of stop_codon
+
+    Returns:
+        reading_frame (int): [1, 2, 3] if valid ORF, -1 otherwise
+                             Note: 1, 2, 3 to match indexing in quiz
+    """
+
+    if is_orf(start_index, stop_index):
+
+        # +1 to reflect indexing in quiz and lectures
+        # Otherwise indexing would be [0, 1, 2] which
+        # will lead to errors in responses
+        return (start_index % 3) + 1
+
+    else:
+
+        return -1
+
+def get_orf_reading_frame(seq):
+    """
+    Needed a wrapper to get ORF reading frames
+    """
+
+    orfs = get_orfs(seq)
+
+    reading_frame = [orf_reading_frame(start, stop) for start, stop in orfs]
+
+    return reading_frame
+
+def get_orfs(seq):
+    """
+    Return a list of valid open reading frames (ORFs).
+
+    Args:
+        seq (sequence): nucleotide sequence
+
+    Returns
+        orf_index (list of lists): each element contains a list of [start, stop]
+    """
+
+    start_codons = find_start_codons(seq)
+
+    stop_codons = find_stop_codons(seq)
+
+    # Need to create comprehensive comparison of start/stop codons
+    # Added in -1 filter so we only return valid ORFs
+    orf_index = [[start, stop] for start in start_codons for stop in stop_codons if orf_length(start, stop) != -1]
+
+    return orf_index
+
+def get_orf_lengths(seq):
+    """
+    Needed a way to get all lengths of valid ORFs in a
+    specified sequence
+
+    Args:
+        seq (sequence): nucleotide sequence
+
+    Returns:
+        l (list): List of all ORF lengths
+    """
+
+    orf_index = get_orfs(seq)
+
+    # The lengths must include the stop codon too, so add 3
+    # Recall that the stop index reflects the beginning of the
+    # stop codon.
+    l = [x[1] - x[0] + 3 for x in orf_index]
+
+    return l
+
+def get_orf_complete(seq):
+    """
+    Needed a way to package up ORF information into a dictionary
+
+    Key is (start, stop)
+    This includes the following:
+        - length (np.array): ORF lengths
+        - reading_frame (int): ORF reading frame
+    """
+
+    # Get the ORFs
+    orfs = get_orfs(seq)
+
+    # Get lengths
+    l = get_orf_lengths(seq)
+
+    # Get reading frame
+    reading_frame = get_orf_reading_frame(seq)
+
+    # Create dictionary output
+    orf_complete = {}
+
+    for start, stop in orfs:
+        orf_complete[(start, stop)] = {}
+        orf_complete[(start, stop)]['length'] = l
+        orf_complete[(start, stop)]['reading_frame'] = reading_frame
+
+    return orf_complete
+
+def get_fasta_orfs(data):
+    """
+    Simple wrapper to process multiple sequences read in
+    from fasta (or other) file
+
+    Args:
+        data (list): list of sequence objects
+
+    Returns:
+        orfs (dict): dictionary containing info about all ORFs
+                     in fasta or other file
+    """
+
+    pass
