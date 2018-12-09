@@ -334,7 +334,8 @@ def fragment_seq(seq, n, offset=0, fragments=[]):
 
         fragments = []
 
-    fragment = seq[offset:offset+n]
+    # Converting to an immutable object type
+    fragment = str(seq[offset:offset+n])
 
     # print('"' + fragment + '"')
     new_offset = offset + 1
@@ -350,3 +351,45 @@ def fragment_seq(seq, n, offset=0, fragments=[]):
 
         return fragments
 
+def get_fragment_counts(seq, n):
+    """
+    Needed to count the number of occurances
+    of each repeat in a sequence.
+
+    Args:
+        seq (sequence): nucleotide sequence
+        n (int): repeat length
+
+    Returns:
+        fragment_counts (dict): dictionary of {'<fragment>': count}
+    """
+
+    fragment_counts = {}
+
+    # Get the repeats
+    fragments = fragment_seq(seq, n)
+
+    # Get unique fragments
+    #  This will be used to initialize dictionary counts
+    #  to 0
+    for f in iter(set(fragments)):
+        fragment_counts[f] = 0
+
+    # Now, count the fragments
+    for f in fragments:
+        fragment_counts[f] += 1
+
+    return fragment_counts
+
+def get_fragment_counts_complete(data):
+    """
+    Wrapper to iterate through all elements in FASTA file
+
+    Args:
+        data (list): list of sequences
+
+    Returns:
+        fragment_counts (dict):
+    """
+
+    pass
