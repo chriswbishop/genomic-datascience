@@ -294,10 +294,11 @@ def get_orf_complete(seq):
     # Create dictionary output
     orf_complete = {}
 
-    for start, stop in orfs:
+    for i, index in enumerate(iter(orfs)):
+        start, stop = index
         orf_complete[(start, stop)] = {}
-        orf_complete[(start, stop)]['length'] = l
-        orf_complete[(start, stop)]['reading_frame'] = reading_frame
+        orf_complete[(start, stop)]['length'] = l[i]
+        orf_complete[(start, stop)]['reading_frame'] = reading_frame[i]
 
     return orf_complete
 
@@ -314,4 +315,38 @@ def get_fasta_orfs(data):
                      in fasta or other file
     """
 
-    pass
+    fasta_orfs = {}
+
+    for d in data:
+
+        _id = d.id
+
+        fasta_orfs[_id] = get_orf_complete(d.seq)
+
+    return fasta_orfs
+
+def fragment_seq(seq, n, offset=0, fragments=[]):
+    """
+    Breaks a sequence up into fragments of length n
+    """
+
+    if offset == 0:
+
+        fragments = []
+
+    fragment = seq[offset:offset+n]
+
+    # print('"' + fragment + '"')
+    new_offset = offset + 1
+    # print(new_offset)
+    # Only include the fragment if it is correctly sized
+    if (new_offset <= len(seq)) & (len(fragment) == n):
+
+        fragments.append(fragment)
+
+        return fragment_seq(seq, n, new_offset, fragments)
+
+    else:
+
+        return fragments
+
