@@ -8,24 +8,70 @@ file_name = 'dna2.fasta'
 # Read the file
 data = list(Bio.SeqIO.parse(file_name, 'fasta'))
 
-print(f'{len(data)} records')
 
 def sequence_lengths(data):
+    """
+    Compute sequence lengths
+
+    Required for final.
+
+    Args:
+        data (list): list of sequence objects
+
+    Returns:
+        l (np.array): array of lengths
+    """
 
     return np.array([len(d) for d in data])
 
+
 def longest_sequence(data):
+    """
+    Compute max length of sequences.
+
+    Required for final.
+
+    Args:
+        data (list): list of sequence objects
+
+    Returns:
+        max_length (int): maximum observed sequence length
+    """
 
     return sequence_lengths(data).max()
 
+
 def mask_sequence_length(data, sequence_length):
+    """
+    Return sequences of specified sequence length.
+
+    Turned out to be a useful function for the final.
+
+    Args:
+        data (list): list of sequence objects
+        sequence_length (int): target sequence length
+
+    Returns:
+        data (list): subsetted list of sequences of
+                     desired length
+    """
 
     # Get sequence lengths
     _l = sequence_lengths(data)
 
     return [data[i] for i in range(len(_l)) if _l[i] == sequence_length]
 
+
 def get_longest_sequence(data):
+    """
+    Get ... longest ... sequence
+
+    Args:
+        data (list): list of sequence objects
+
+    Returns:
+        data (list): subsetted data with longest length
+    """
 
     # Get the length
     _max = longest_sequence(data)
@@ -33,63 +79,47 @@ def get_longest_sequence(data):
     # Mask and return value
     return mask_sequence_length(data, _max)
 
+
 def get_shortest_sequence(data):
+    """
+    Get ... shortest ... sequence
+
+    Args:
+        data (list): list of sequence objects
+
+    Returns:
+        data (list): subsetted data with shortest length
+    """
 
     _min = shortest_sequence(data)
 
     return mask_sequence_length(data, _min)
 
+
 def shortest_sequence(data):
+    """
+    Compute min length of sequences.
+
+    Required for final.
+
+    Args:
+        data (list): list of sequence objects
+
+    Returns:
+        min_length (int): minimum observed sequence length
+    """
 
     return sequence_lengths(data).min()
-
-def n_shortest_sequence(data):
-
-    _l = sequence_lengths(data)
-
-    _min = shortest_sequence(data)
-
-    return (_l == _min).sum()
-
-def n_longest_sequence(data):
-
-    _l = sequence_lengths(data)
-
-    _max = longest_sequence(data)
-
-    return (_l == _max).sum()
-
-def set_reading_frame(seq, offset):
-
-    return seq[offset:]
-
-def is_start_codon(codon):
-
-    if codon.lower() in ['atg']:
-
-        return True
-
-    else:
-
-        return False
-
-def is_stop_codon(codon):
-
-    if codon.lower() in ['taa', 'tag', 'tga']:
-
-        return True
-
-    else:
-
-        return False
 
 
 def find_codon(seq, codon, n=0, codon_index=[]):
     """
     Recursively searches a sequence and returns the
-    start location of the specified codon
-    This can be generalized to search recursively for
-    any codon sequence ... should make that happen
+    start location of the specified codon.
+
+    Note: code supports arbitrary sequences and lengths.
+          So, "codon" here is perhaps too application
+          specific.
 
     Args:
         seq (sequence): nucleotide sequence
@@ -126,6 +156,7 @@ def find_codon(seq, codon, n=0, codon_index=[]):
 
         return codon_index
 
+
 def find_start_codons(seq):
     """
     Find the start location of start codons
@@ -138,6 +169,7 @@ def find_start_codons(seq):
     """
 
     return find_codon(seq, 'ATG')
+
 
 def find_stop_codons(seq):
     """
@@ -159,10 +191,12 @@ def find_stop_codons(seq):
 
     return codon_index
 
+
 def is_orf(start_index, stop_index):
     """
     Needed a way to determine if a start and stop codon
-    are in frame or not.
+    are in the same frame or not. Stop codon must follow
+    start codon.
 
     Args:
         start_index (int): start position of start_codon
@@ -175,6 +209,7 @@ def is_orf(start_index, stop_index):
     # Will be an ORF if the stop codon is in frame
     # and the stop_index is after the start_index
     return (start_index < stop_index) & (((stop_index - start_index) % 3) == 0)
+
 
 def orf_length(start_index, stop_index):
     """
@@ -193,8 +228,10 @@ def orf_length(start_index, stop_index):
         return stop_index - start_index
 
     else:
-
+        # Special value indicating an invald ORF
+        # Used elsewhere for filtering, etc.
         return -1
+
 
 def orf_reading_frame(start_index, stop_index):
     """
@@ -220,9 +257,17 @@ def orf_reading_frame(start_index, stop_index):
 
         return -1
 
+
 def get_orf_reading_frame(seq):
     """
-    Needed a wrapper to get ORF reading frames
+    Needed a wrapper to get all ORFs in a sequence
+
+    Args:
+        seq (sequence): nucleotide sequence
+
+    Returns:
+        reading_frame (list): list of reading frames for
+                              all ORFs in sequence
     """
 
     orfs = get_orfs(seq)
@@ -230,6 +275,7 @@ def get_orf_reading_frame(seq):
     reading_frame = [orf_reading_frame(start, stop) for start, stop in orfs]
 
     return reading_frame
+
 
 def get_orfs(seq):
     """
@@ -246,19 +292,17 @@ def get_orfs(seq):
 
     stop_codons = find_stop_codons(seq)
 
-    # Need to create comprehensive comparison of start/stop codons
-    # Added in -1 filter so we only return valid ORFs
-    # orf_index = [[start, stop] for start in start_codons for stop in stop_codons if orf_length(start, stop) != -1]
-
     # After looking at the quiz, I think the instructors want us to assume
     # absolute termination at the nearest stop codon. This is not strictly
     # the case in reality, but ... fine.
     def nearest_stop_codon(start):
 
+        # Convert to numpy array to facilitate filtering
         stop = np.array(stop_codons)
 
         # Only include stop codons that are past
-        # the start codon
+        # the start codon. +3 here is a magic number
+        # to advance past the triplet codon.
         stop = stop[stop > start+3]
 
         # We are only interested in stop locations
@@ -266,16 +310,20 @@ def get_orfs(seq):
         # that subset is available.
         stop = stop[is_orf(start, stop)]
 
+        # Possible that we will not find an in-frame
+        # stop code (i.e., no ORF)
+        # Conditional statement here protects against
+        # this error and facilitates filtering return
         if len(stop) > 0:
-            # Need to add 3 here so we don't find
-            # stop codons that are part of the
-            # start codon
             return stop.min()
         else:
             return None
 
+    # Will be a list of lists of values
     orf_index = []
 
+    # Iterate through all start codons and find the
+    # nearest, in-frame stop codon
     for start in start_codons:
 
         stop = nearest_stop_codon(start)
@@ -288,10 +336,11 @@ def get_orfs(seq):
 
     return orf_index
 
+
 def get_orf_lengths(seq):
     """
     Needed a way to get all lengths of valid ORFs in a
-    specified sequence
+    specified sequence.
 
     Args:
         seq (sequence): nucleotide sequence
@@ -309,9 +358,12 @@ def get_orf_lengths(seq):
 
     return l
 
+
 def get_orf_complete(seq):
     """
-    Needed a way to package up ORF information into a dictionary
+    Needed a way to package up ORF information into a dictionary.
+    This high-level data structurew as easier to manipulate for
+    the final.
 
     Key is (start, stop)
     This includes the following:
@@ -339,6 +391,7 @@ def get_orf_complete(seq):
 
     return orf_complete
 
+
 def get_fasta_orfs(data):
     """
     Simple wrapper to process multiple sequences read in
@@ -365,19 +418,34 @@ def get_fasta_orfs(data):
 
 def fragment_seq(seq, n, offset=0, fragments=[]):
     """
-    Breaks a sequence up into fragments of length n
+    Fragments a sequence into fragments of length n.
+    At its core, this Recursively traverses the
+    DNA sequence.
+
+    Note: ran into max recursion depth errors,
+    had to set sys.setrecursionlimit(5000)
+
+    Args:
+        seq (sequence): nucleotide sequence
+        n (int): fragment size
+        offset (int): starting point offset
+        fragments (list): list of DNA fragments.
+                          This is primarily used as
+                          a passthrough during recursion
     """
 
     if offset == 0:
 
         fragments = []
 
-    # Converting to an immutable object type
+    # Converting to an immutable object string
+    #   (Hashing sequence in dictionaries later was
+    #    problematic)
     fragment = str(seq[offset:offset+n])
 
-    # print('"' + fragment + '"')
+    # Advance to next location in sequence
     new_offset = offset + 1
-    # print(new_offset)
+
     # Only include the fragment if it is correctly sized
     if (new_offset <= len(seq)) & (len(fragment) == n):
 
@@ -388,6 +456,7 @@ def fragment_seq(seq, n, offset=0, fragments=[]):
     else:
 
         return fragments
+
 
 def get_fragment_counts(seq, n):
     """
@@ -419,7 +488,8 @@ def get_fragment_counts(seq, n):
 
     return fragment_counts
 
-def get_fragment_counts_complete(data):
+
+def get_fragment_counts_complete(data, n):
     """
     Wrapper to iterate through all elements in FASTA file
 
@@ -430,4 +500,40 @@ def get_fragment_counts_complete(data):
         fragment_counts (dict):
     """
 
-    pass
+    fragment_counts = {}
+
+    for i, d in enumerate(iter(data)):
+        print(i)
+        fragment_counts[d.id] = get_fragment_counts(d.seq, n)
+
+    return fragment_counts
+
+
+def aggregate_fragment_count(data, n):
+    """
+    Final questions often required me to aggregate information
+    and counts over all sequences. This wrapper function
+    helped me do that quickly and reproducibly.
+
+    Args:
+        data (list): list of sequences
+        n (int): fragment size
+
+    Returns:
+        _agg (dict): dictionary of 'seq': count
+    """
+
+    fragment_counts = get_fragment_counts_complete(data, n)
+
+    _agg = {}
+
+    # Aggregate counts
+    for seq_id, fc in fragment_counts.items():
+        for fc_id, count in fc.items():
+
+            if fc_id not in _agg:
+                _agg[fc_id] = count
+            else:
+                _agg[fc_id] += count
+
+    return _agg
