@@ -3,10 +3,10 @@ import Bio.SeqIO
 import numpy as np
 
 # file_name = 'dna.example.fasta'
-file_name = 'dna2.fasta'
+# file_name = 'dna2.fasta'
 
 # Read the file
-data = list(Bio.SeqIO.parse(file_name, 'fasta'))
+# data = list(Bio.SeqIO.parse(file_name, 'fasta'))
 
 
 def sequence_lengths(data):
